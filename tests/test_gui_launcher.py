@@ -118,7 +118,7 @@ class TestLaunchGuiServer:
         assert exc_info.value.code == 1
 
     @pytest.mark.parametrize(
-        "run_side_effect,expected_exit_code,mount_cwd,gpu,port,expected_port_mapping",
+        "run_side_effect,expected_exit_code,mount_cwd,gpu,port,port_mapping",
         [
             # Docker run failure
             (
@@ -160,7 +160,7 @@ class TestLaunchGuiServer:
         mount_cwd,
         gpu,
         port,
-        expected_port_mapping,
+        port_mapping,
     ):
         """Test various GUI server launch scenarios."""
         # Setup mocks
@@ -194,7 +194,7 @@ class TestLaunchGuiServer:
             assert run_cmd[0:2] == ["docker", "run"]
             # Verify --pull=always is in the command
             assert "--pull=always" in run_cmd
-            assert expected_port_mapping in run_cmd
+            assert port_mapping in run_cmd
 
             if mount_cwd:
                 assert "SANDBOX_VOLUMES=/current/dir:/workspace:rw" in " ".join(run_cmd)
