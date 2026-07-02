@@ -28,4 +28,10 @@ def add_serve_parser(subparsers: argparse._SubParsersAction) -> argparse.Argumen
         action="store_true",
         default=False,
     )
+    serve_parser.add_argument(
+        "--port",
+        help="Port on the host to expose the OpenHands GUI server",
+        type=int,
+        default=3000,
+    )
     return serve_parser

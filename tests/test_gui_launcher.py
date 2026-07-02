@@ -118,16 +118,25 @@ class TestLaunchGuiServer:
         assert exc_info.value.code == 1
 
     @pytest.mark.parametrize(
-        "run_side_effect,expected_exit_code,mount_cwd,gpu",
+        "run_side_effect,expected_exit_code,mount_cwd,gpu,port,expected_port_mapping",
         [
             # Docker run failure
-            (subprocess.CalledProcessError(1, "docker run"), 1, False, False),
+            (
+                subprocess.CalledProcessError(1, "docker run"),
+                1,
+                False,
+                False,
+                3000,
+                None,
+            ),
             # KeyboardInterrupt during run
-            (KeyboardInterrupt(), 0, False, False),
+            (KeyboardInterrupt(), 0, False, False, 3000, None),
             # Success with mount_cwd
-            (MagicMock(returncode=0), None, True, False),
+            (MagicMock(returncode=0), None, True, False, 3000, "3000:3000"),
             # Success with GPU
-            (MagicMock(returncode=0), None, False, True),
+            (MagicMock(returncode=0), None, False, True, 3000, "3000:3000"),
+            # Success with custom host port
+            (MagicMock(returncode=0), None, False, False, 4000, "4000:3000"),
         ],
     )
     @patch("openhands_cli.gui_launcher.check_docker_requirements")
@@ -150,6 +159,8 @@ class TestLaunchGuiServer:
         expected_exit_code,
         mount_cwd,
         gpu,
+        port,
+        expected_port_mapping,
     ):
         """Test various GUI server launch scenarios."""
         # Setup mocks
@@ -168,11 +179,11 @@ class TestLaunchGuiServer:
         # Test the function
         if expected_exit_code is not None:
             with pytest.raises(SystemExit) as exc_info:
-                launch_gui_server(mount_cwd=mount_cwd, gpu=gpu)
+                launch_gui_server(mount_cwd=mount_cwd, gpu=gpu, port=port)
             assert exc_info.value.code == expected_exit_code
         else:
             # Should not raise SystemExit for successful cases
-            launch_gui_server(mount_cwd=mount_cwd, gpu=gpu)
+            launch_gui_server(mount_cwd=mount_cwd, gpu=gpu, port=port)
 
             # Verify subprocess.run was called once (only docker run, no separate pull)
             assert mock_run.call_count == 1
@@ -183,6 +194,7 @@ class TestLaunchGuiServer:
             assert run_cmd[0:2] == ["docker", "run"]
             # Verify --pull=always is in the command
             assert "--pull=always" in run_cmd
+            assert expected_port_mapping in run_cmd
 
             if mount_cwd:
                 assert "SANDBOX_VOLUMES=/current/dir:/workspace:rw" in " ".join(run_cmd)
